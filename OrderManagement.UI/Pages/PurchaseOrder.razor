@@ -1,5 +1,8 @@
 ﻿@page "/purchaseorder"
-@using OrderManagement.UI.Data;
+@using OrderManagement.UI.Models;
+@using System.Text.Json;
+@using System.Text;
+@using Blazored.Typeahead;
 @inject HttpClient Http
 
 <PageTitle>Purchase Order</PageTitle>
@@ -7,67 +10,83 @@
 <div class="container mt-3">
     <div class="card">
         <div class="card-header text-center">Purchase Order Entry Form</div>
+        @*<EditForm Model="@order" OnValidSubmit="@CreateOrder">
+            <DataAnnotationsValidator />*@
         <div class="card-body">
-            <form>
-                <div class="row">
-                    <div class="col-6">
-                        <div class="row">
-                            <div class="col-2">
-                                <label for="refId" class="form-label">Ref. ID:</label>
-                            </div>
-                            <div class="col-10">
-                                <input type="text" class="form-control refId" id="refId" name="refId" @bind="@order.ReferenceId">
-                            </div>
+            <div class="row">
+                <div class="col-6">
+                    <div class="row">
+                        <div class="col-2">
+                            <label for="refId" class="form-label">Ref. ID:</label>
                         </div>
-                        <div class="row mt-2">
-                            <div class="col-2">
-                                <label for="poDate" class="form-label">PO Date:</label>
-                            </div>
-                            <div class="col-10">
-                                <input type="date" class="form-control poDate" id="poDate" name="poDate" @bind="@order.OrderDate">
-                            </div>
-                        </div>
-                        <div class="row mt-2">
-                            <div class="col-2">
-                                <label for="expDate" class="form-label">Expected Date:</label>
-                            </div>
-                            <div class="col-10">
-                                <input type="date" class="form-control expDate" id="expDate" name="expDate" @bind="@order.ExpectedDate">
+                        <div class="col-10">
+                            @*<input type="text" class="form-control" @onclick="@incrementDecrement" @bind-value="@order.ReferenceId">*@
+                            <div class="input-group">
+                                <span class="input-group-btn">
+                                    <button type="button" @onclick="@decrement" class="btn btn-danger btn-number">
+                                        <span class="oi oi-caret-left"></span>
+                                    </button>
+                                </span>
+                                <input type="text" id="quantity" name="quantity" class="form-control input-number text-center" @bind-value="@order.ReferenceId" min="001" max="100">
+                                <span class="input-group-btn">
+                                    <button type="button" @onclick="@increment" class="btn btn-success btn-number">
+                                        <span class="oi oi-caret-right"></span>
+                                    </button>
+                                </span>
                             </div>
                         </div>
                     </div>
-                    <div class="col-6">
-                        <div class="row">
-                            <div class="col-2">
-                                <label for="poNo" class="form-label">PO No:</label>
-                            </div>
-                            <div class="col-10">
-                                <input type="text" class="form-control poNo" id="poNo" name="poNo" @bind="@order.OrderNo">
-                            </div>
+                    <div class="row mt-2">
+                        <div class="col-2">
+                            <label for="poDate" class="form-label">PO Date:</label>
                         </div>
-                        <div class="row mt-2">
-                            <div class="col-2">
-                                <label for="supplier" class="form-label">Supplier:</label>
-                            </div>
-                            <div class="col-10">
-                                <select class="form-control supplier" id="supplier" name="supplier" @bind="@order.SupplierId">
-                                    <option>1</option>
-                                    <option>1</option>
-                                    <option>1</option>
-                                </select>
-                            </div>
+                        <div class="col-10">
+                            <input type="date" class="form-control" @bind-value="@order.OrderDate">
                         </div>
-                        <div class="row mt-2">
-                            <div class="col-2">
-                                <label for="remarks" class="form-label">Remarks:</label>
-                            </div>
-                            <div class="col-10">
-                                <textarea class="form-control remarks" rows="3" name="remarks" id="remarks" @bind="@order.Remarks"></textarea>
-                            </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-2">
+                            <label for="expDate" class="form-label">Expected Date:</label>
+                        </div>
+                        <div class="col-10">
+                            <input type="date" class="form-control"  @bind="@order.ExpectedDate">
                         </div>
                     </div>
                 </div>
-            </form>
+                <div class="col-6">
+                    <div class="row">
+                        <div class="col-2">
+                            <label for="poNo" class="form-label">PO No:</label>
+                        </div>
+                        <div class="col-10">
+                            <input type="text" class="form-control poNo" id="poNo" name="poNo" @bind="@order.OrderNo">
+                            <ValidationMessage For="@(() => order.OrderNo)"></ValidationMessage>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-2">
+                            <label for="supplier" class="form-label">Supplier:</label>
+                        </div>
+                        <div class="col-10">
+                            <select class="form-control" @bind="@order.SupplierId">
+                                <option selected value="0">Select</option>
+                                @foreach (var sup in suppliers!)
+                                {
+                                    <option value="@sup.Id">@sup.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-2">
+                            <label for="remarks" class="form-label">Remarks:</label>
+                        </div>
+                        <div class="col-10">
+                            <textarea class="form-control remarks" rows="3" name="remarks" id="remarks" @bind="@order.Remarks"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         <div class="card-footer">
             <div class="row">
@@ -77,7 +96,11 @@
                             <label for="item" class="form-label">Item:</label>
                         </div>
                         <div class="col-10">
-                            <input type="text" class="form-control item" id="item" name="item">
+                            @*<input type="text" class="form-control" @bind="@orderItem.ItemName">*@
+                            <BlazoredTypeahead SearchMethod="searchItem" @bind-Value="selectedItem">
+                                <SelectedTemplate>@context.Name</SelectedTemplate>
+                                <ResultTemplate>@context.Name</ResultTemplate>
+                            </BlazoredTypeahead>
                         </div>
                     </div>
                 </div>
@@ -87,7 +110,7 @@
                             <label for="qty" class="form-label">Qty:</label>
                         </div>
                         <div class="col-10">
-                            <input type="text" class="form-control qty" id="qty" name="qty">
+                            <input type="text" class="form-control" @bind="@orderItem.Quantity">
                         </div>
                     </div>
                 </div>
@@ -97,13 +120,13 @@
                             <label for="rate" class="form-label">Rate:</label>
                         </div>
                         <div class="col-10">
-                            <input type="text" class="form-control rate" id="rate" name="rate">
+                            <input type="text" class="form-control" @bind="@orderItem.Rate">
                         </div>
                     </div>
                 </div>
                 <div class="col-1">
                     <div class="row">
-                        <button type="button" class="btn btn-secondary" style="width:89%"><span class="oi oi-plus"></span></button>
+                        <button type="button" @onclick="@addItem" class="btn btn-secondary" style="width:89%"><span class="oi oi-plus"></span></button>
                     </div>
                 </div>
             </div>
@@ -118,46 +141,105 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr class="text-center">
-                        <td style="text-align:left;">A</td>
-                        <td>5</td>
-                        <td>10</td>
-                        <td style="cursor:pointer;"><span class="oi oi-pencil" aria-hidden="true"></span></td>
-                        <td style="cursor:pointer;"><span class="oi oi-trash" aria-hidden="true"></span></td>
-                    </tr>
-                    <tr class="text-center">
-                        <td style="text-align:left;">A</td>
-                        <td>5</td>
-                        <td>10</td>
-                        <td style="cursor:pointer;"><span class="oi oi-pencil" aria-hidden="true"></span></td>
-                        <td style="cursor:pointer;"><span class="oi oi-trash" aria-hidden="true"></span></td>
-                    </tr>
-                    <tr class="text-center">
-                        <td style="text-align:left;">A</td>
-                        <td>5</td>
-                        <td>10</td>
-                        <td style="cursor:pointer;"><span class="oi oi-pencil" aria-hidden="true"></span></td>
-                        <td style="cursor:pointer;"><span class="oi oi-trash" aria-hidden="true"></span></td>
-                    </tr>
+                    @foreach (var item in items)
+                    {
+                        <tr class="text-center">
+                            <td style="text-align:left;">@item.ItemName</td>
+                            <td>@item.Quantity</td>
+                            <td>@item.Rate</td>
+                            <td style="cursor:pointer;"><span class="oi oi-pencil" aria-hidden="true"></span></td>
+                            <td style="cursor:pointer;"><span class="oi oi-trash" aria-hidden="true"></span></td>
+                        </tr>
+                    }
                 </tbody>
             </table>
-            <div class="row float-end">
+            <div class="row float-end" style="margin-top:1%; margin-bottom:1%;">
                 <div class="col-6">
-                    <button type="button" class="btn btn-primary" @onclick="@CreateOrder">Save</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
                 </div>
                 <div class="col-6">
                     <button type="button" class="btn btn-danger">Close</button>
                 </div>
             </div>
         </div>
+        @*</EditForm>*@
     </div>
 </div>
 
 @code {
-    VmOrder order = new VmOrder();
+
+    TableValuedParameter orderItem = new TableValuedParameter();
+    List<TableValuedParameter> items = new List<TableValuedParameter>();
+    bool result = false;
+    protected void addItem()
+    {
+        items.Add(orderItem);
+        result = true;
+        OnInitializedAsync();
+    }
+
+    Order order = new Order();
 
     protected async Task CreateOrder()
     {
-        var data = await Http.PostAsJsonAsync("https://localhost:44337/api/order/CreateOrder", order);
+        var list = new List<TableValuedParameter>();
+        order = new Order
+        {
+            ReferenceId = 001,
+            OrderNo = "1001",
+            OrderDateString = DateTime.Now.ToString(),
+            SupplierId = 1,
+            ExpectedDateString = DateTime.Now.ToString(),
+            Remarks = "Create Order"
+        };
+        for (int i = 0; i < 3; i++)
+        {
+            var orderItem = new TableValuedParameter
+            {
+                OrderId = 1,
+                ItemId = i + 1,
+                Quantity = 5 + i,
+                Rate = 12 + i
+            };
+            list.Add(orderItem);
+        }
+        order.OrderItem = list;
+        //order.OrderItem = items;
+
+        HttpClient client = new HttpClient();
+        client.BaseAddress = new Uri("https://localhost:44337/");
+        var json = JsonSerializer.Serialize(order);
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        //var data = await Http.PostAsJsonAsync("https://localhost:44337/api/order/CreateOrder", order);
+        var data = client.PostAsJsonAsync("api/order/CreateOrder", content).Result;
+    }
+
+    List<Supplier>? suppliers;
+    List<Item>? allItem;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!result)
+        {
+            suppliers = await Http.GetFromJsonAsync<List<Supplier>>("https://localhost:44337/api/supplier/GetAllSupplier");
+            allItem = await Http.GetFromJsonAsync<List<Item>>("https://localhost:44337/api/item/GetAllItem");
+        }
+    }
+    private Item selectedItem;
+    protected async Task<IEnumerable<Item>> searchItem(string searchTxt)
+    {
+        return await Task.FromResult(allItem.Where(x => x.Name.ToLower().Contains(searchTxt.ToLower())).ToList());
+    }
+
+    protected void increment()
+    {
+        order.ReferenceId++;
+    }
+    protected void decrement()
+    {
+        if(order.ReferenceId > 0)
+        {
+            order.ReferenceId--;
+        }
     }
 }

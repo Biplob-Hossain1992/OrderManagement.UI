@@ -1,5 +1,5 @@
 ﻿@page "/fetchorderdata"
-@using OrderManagement.UI.Data;
+@using OrderManagement.UI.Models;
 @inject HttpClient Http
 
 <PageTitle>All Orders</PageTitle>
@@ -46,11 +46,11 @@ else
 }
 
 @code {
-    List<VmOrder>? orders;
+    List<Order>? orders;
 
     protected override async Task OnInitializedAsync()
     {
-        orders = await Http.GetFromJsonAsync<List<VmOrder>>("https://localhost:44337/api/order/getallorder");
+        orders = await Http.GetFromJsonAsync<List<Order>>("https://localhost:44337/api/order/getallorder");
         
     }
 }
