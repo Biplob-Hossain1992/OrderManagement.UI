@@ -8,6 +8,7 @@ namespace OrderManagement.UI.Models
         public int ReferenceId { get; set; } = 1;
         [Required(ErrorMessage = "Order Number is Required")]
         public string OrderNo { get; set; }
+        public int Id { get; set; }
         public DateTime OrderDate { get; set; } = DateTime.Today;
         public string OrderDateString { get; set; }
         public string SupplierName { get; set; } = "";
